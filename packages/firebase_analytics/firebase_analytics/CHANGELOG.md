@@ -1,3 +1,22 @@
+## 5.0.12
+
+* Make the pedantic dev_dependency explicit.
+
+## 5.0.11
+
+* Fix overrides a deprecated API.
+* Raise minimum required Flutter SDK version to 1.12.13+hotfix.4
+
+## 5.0.10
+
+* Keep a local registrar to get activity for foreground actions for v1 embedder.
+
+## 5.0.9
+
+* Remove the deprecated `author:` field from pubspec.yaml
+* Migrate the plugin to the pubspec platforms manifest.
+* Bump the minimum Flutter version to 1.10.0.
+
 ## 5.0.8
 
 * Update homepage since the package moved for the platform interface migration.

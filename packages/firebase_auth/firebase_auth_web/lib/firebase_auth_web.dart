@@ -8,6 +8,7 @@ import 'package:firebase_auth_platform_interface/firebase_auth_platform_interfac
 import 'package:firebase/firebase.dart' as firebase;
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
+import 'package:http_parser/http_parser.dart';
 
 class FirebaseAuthWeb extends FirebaseAuthPlatform {
   static void registerWith(Registrar registrar) {
@@ -41,6 +42,9 @@ class FirebaseAuthWeb extends FirebaseAuthPlatform {
   }
 
   PlatformUser _fromJsUser(firebase.User user) {
+    if (user == null) {
+      return null;
+    }
     return PlatformUser(
       providerId: user.providerId,
       uid: user.uid,
@@ -49,9 +53,9 @@ class FirebaseAuthWeb extends FirebaseAuthPlatform {
       email: user.email,
       phoneNumber: user.phoneNumber,
       creationTimestamp:
-          DateTime.parse(user.metadata.creationTime).millisecondsSinceEpoch,
+          parseHttpDate(user.metadata.creationTime).millisecondsSinceEpoch,
       lastSignInTimestamp:
-          DateTime.parse(user.metadata.lastSignInTime).millisecondsSinceEpoch,
+          parseHttpDate(user.metadata.lastSignInTime).millisecondsSinceEpoch,
       isAnonymous: user.isAnonymous,
       isEmailVerified: user.emailVerified,
       providerData:
@@ -143,26 +147,19 @@ class FirebaseAuthWeb extends FirebaseAuthPlatform {
 
   @override
   Future<List<String>> fetchSignInMethodsForEmail(String app, String email) {
-    // TODO(hterkelsen): Use `fetchSignInMethodsForEmail` once
-    // https://github.com/FirebaseExtended/firebase-dart/issues/272
-    // is resolved.
-    throw UnimplementedError('fetchSignInMethodsForEmail');
+    final firebase.Auth auth = _getAuth(app);
+    return auth.fetchSignInMethodsForEmail(email);
   }
 
   @override
   Future<PlatformUser> getCurrentUser(String app) async {
     final firebase.Auth auth = _getAuth(app);
     final firebase.User currentUser = auth.currentUser;
-    if (currentUser == null) {
-      return null;
-    }
     return _fromJsUser(currentUser);
   }
 
   @override
   Future<PlatformIdTokenResult> getIdToken(String app, bool refresh) async {
-    // TODO(hterkelsen): `package:firebase` added `getIdTokenResult` in
-    // version 7.0.0. Use it here once that is published.
     final firebase.Auth auth = _getAuth(app);
     final firebase.User currentUser = auth.currentUser;
     final firebase.IdTokenResult idTokenResult =
@@ -172,10 +169,8 @@ class FirebaseAuthWeb extends FirebaseAuthPlatform {
 
   @override
   Future<bool> isSignInWithEmailLink(String app, String link) {
-    // TODO(hterkelsen): Implement this once
-    // https://github.com/FirebaseExtended/firebase-dart/issues/273
-    // is resolved.
-    throw UnimplementedError('isSignInWithEmailLink');
+    final firebase.Auth auth = _getAuth(app);
+    return Future.value(auth.isSignInWithEmailLink(link));
   }
 
   @override
@@ -231,9 +226,20 @@ class FirebaseAuthWeb extends FirebaseAuthPlatform {
       String androidPackageName,
       bool androidInstallIfNotAvailable,
       String androidMinimumVersion}) {
-    // TODO(hterkelsen): File issue with `package:firebase` to show
-    // `sendSignInLinkToEmail`.
-    throw UnimplementedError('sendLinkToEmail');
+    final firebase.Auth auth = _getAuth(app);
+    final actionCodeSettings = firebase.ActionCodeSettings(
+      url: url,
+      handleCodeInApp: handleCodeInApp,
+      iOS: firebase.IosSettings(
+        bundleId: iOSBundleID,
+      ),
+      android: firebase.AndroidSettings(
+        packageName: androidPackageName,
+        installApp: androidInstallIfNotAvailable,
+        minimumVersion: androidMinimumVersion,
+      ),
+    );
+    return auth.sendSignInLinkToEmail(email, actionCodeSettings);
   }
 
   @override
@@ -279,9 +285,10 @@ class FirebaseAuthWeb extends FirebaseAuthPlatform {
   @override
   Future<PlatformAuthResult> signInWithEmailAndLink(
       String app, String email, String link) async {
-    // TODO(hterkelsen): Use signInWithEmailLink once 7.0.0 of package:firebase
-    // is released.
-    throw UnimplementedError('signInWithEmailAndLink');
+    final firebase.Auth auth = _getAuth(app);
+    final firebase.UserCredential userCredential =
+        await auth.signInWithEmailLink(email, link);
+    return _fromJsUserCredential(userCredential);
   }
 
   @override
