@@ -272,7 +272,7 @@ class MethodCallHandlerImpl implements MethodChannel.MethodCallHandler {
 
       case "FirebaseDatabase#setPersistenceCacheSizeBytes":
         {
-          Long cacheSize = call.argument("cacheSize");
+          Long cacheSize = Long.valueOf(call.argument("cacheSize").toString());
           try {
             database.setPersistenceCacheSizeBytes(cacheSize);
             result.success(true);
